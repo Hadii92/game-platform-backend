@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:hx-on="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title>Gamestudio - Login</title>
+    <script src="https://unpkg.com/htmx.org@2.0.3/dist/htmx.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <link th:href="@{/css/login.css}" rel="stylesheet">
+</head>
+<body th:class="${currentTheme == 'light'} ? 'light' : ''">
+<div class="login-container">
+    <h2>Welcome to BlockGame</h2>
+    <div class="board">
+        <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+        <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+        <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+        <div class="cell static-block"></div><div class="cell"></div><div class="cell"></div><div class="cell static-block"></div><div class="cell static-block"></div><div class="cell static-block"></div>
+        <div class="cell static-block"></div><div class="cell static-block"></div><div class="cell"></div><div class="cell"></div><div class="cell static-block"></div><div class="cell static-block"></div>
+        <div class="cell static-block"></div><div class="cell static-block"></div><div class="cell static-block"></div><div class="cell static-block"></div><div class="cell static-block"></div><div class="cell static-block"></div>
+        <div class="piece">
+            <div class="block"></div><div class="block"></div><div class="empty"></div>
+            <div class="empty"></div><div class="block"></div><div class="block"></div>
+        </div>
+    </div>
+    <form id="auth-form" method="post">
+        <div class="action-choice">
+            <input type="radio" name="action" value="login" id="login" checked>
+            <label for="login">Login</label>
+            <input type="radio" name="action" value="register" id="register">
+            <label for="register">Register</label>
+            <input type="radio" name="action" value="guest" id="guest">
+            <label for="guest">Guest</label>
+        </div>
+        <input type="text" name="login" placeholder="Login" th:required="${param.action != 'guest'}"/>
+        <input type="password" name="password" placeholder="Password" th:required="${param.action != 'guest'}"/>
+        <input type="submit" value="Submit"/>
+    </form>
+    <div th:if="${param.error}" class="error">
+        <p th:text="${param.error}"></p>
+    </div>
+    <div th:if="${param.message}" class="success">
+        <p th:text="${param.message}"></p>
+    </div>
+    <div class="theme-toggle">
+        <label class="switch">
+            <input type="checkbox" th:checked="${currentTheme == 'light'}"
+                   hx-post="/toggle-theme"
+                   hx-swap="none"
+                   hx-target="body"
+                   hx-on::after-request="if (event.detail.xhr.responseText === 'light') {
+                       document.body.classList.add('light');
+                   } else {
+                       document.body.classList.remove('light');
+                   }">
+            <span class="slider"></span>
+        </label>
+    </div>
+</div>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const form = document.getElementById('auth-form');
+        const toggle = document.querySelector('.switch input');
+        toggle.checked = document.body.classList.contains('light');
+        form.addEventListener('submit', function (event) {
+            const action = document.querySelector('input[name="action"]:checked').value;
+            if (action === 'guest') {
+                form.action = '/blockgame';
+                form.removeAttribute('method');
+            } else {
+                form.action = '/' + action;
+                form.setAttribute('method', 'post');
+            }
+        });
+        const actionRadios = document.querySelectorAll('input[name="action"]');
+        const loginInput = document.querySelector('input[name="login"]');
+        const passwordInput = document.querySelector('input[name="password"]');
+        actionRadios.forEach(radio => {
+            radio.addEventListener('change', function () {
+                if (this.value === 'guest') {
+                    loginInput.disabled = true;
+                    passwordInput.disabled = true;
+                    loginInput.removeAttribute('required');
+                    passwordInput.removeAttribute('required');
+                } else {
+                    loginInput.disabled = false;
+                    passwordInput.disabled = false;
+                    loginInput.setAttribute('required', '');
+                    passwordInput.setAttribute('required', '');
+                }
+            });
+        });
+    });
+</script>
+</body>
+</html>

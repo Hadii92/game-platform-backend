@@ -1,0 +1,53 @@
+ ###
+// Add score
+POST http://localhost:8080/api/score
+Content-Type: application/json
+
+{
+  "game": "BlockPuzzle",
+  "player": "nikita42",
+  "points": "1213",
+  "playedOn": "2025-04-08T12:34:56"
+}
+
+###
+
+# Get scores for a game
+GET http://localhost:8080/api/score/BlockPuzzle
+Content-Type: application/json
+
+
+###
+
+# Get comments for a game
+GET http://localhost:8080/api/comment/BlockPuzzle
+Content-Type: application/json
+###
+# Add comment for a game
+POST http://localhost:8080/api/comment
+Content-Type: application/json
+
+{
+"game": "BlockPuzzle",
+"player": "nikita42",
+"comment": "cool game",
+"commentedOn": "2025-04-08T12:34:56"
+}
+
+###
+// Add rating
+POST http://localhost:8080/api/rating
+Content-Type: application/json
+
+{
+"game": "BlockPuzzle",
+"player": "nikita42222",
+"rating": "2",
+"ratedOn": "2025-05-08T12:34:58"
+}
+
+###
+
+# Get rating for a game
+GET http://localhost:8080/api/rating/BlockPuzzle/nikita42222
+Content-Type: application/json

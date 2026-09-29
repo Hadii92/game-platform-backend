@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:hx-on="http://www.w3.org/1999/xhtml">
+<head>
+    <title>Block Game</title>
+    <script th:src="@{/webjars/htmx.org/dist/htmx.min.js}"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/htmx.org@2.0.3/dist/htmx.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <link th:href="@{/css/gamestyle.css}" rel="stylesheet">
+    <style>
+
+    </style>
+</head>
+<body th:class="${currentTheme == 'light'} ? 'light' : ''">
+<div class="game-container">
+    <header>
+        <div class="header-content">
+            <div class="header-left">
+                <div style="display: flex; align-items: center;">
+                    <div class="logo-board">
+                        <div class="logo-cell"></div><div class="logo-cell"></div><div class="logo-cell"></div><div class="logo-cell"></div><div class="logo-cell"></div><div class="logo-cell"></div>
+                        <div class="logo-cell"></div><div class="logo-cell"></div><div class="logo-cell"></div><div class="logo-cell"></div><div class="logo-cell"></div><div class="logo-cell"></div>
+                        <div class="logo-cell"></div><div class="logo-cell"></div><div class="logo-cell"></div><div class="logo-cell"></div><div class="logo-cell"></div><div class="logo-cell"></div>
+                        <div class="logo-cell static-block"></div><div class="logo-cell"></div><div class="logo-cell"></div><div class="logo-cell static-block"></div><div class="logo-cell static-block"></div><div class="logo-cell static-block"></div>
+                        <div class="logo-cell static-block"></div><div class="logo-cell static-block"></div><div class="logo-cell"></div><div class="logo-cell"></div><div class="logo-cell static-block"></div><div class="logo-cell static-block"></div>
+                        <div class="logo-cell static-block"></div><div class="logo-cell static-block"></div><div class="logo-cell static-block"></div><div class="logo-cell static-block"></div><div class="logo-cell static-block"></div><div class="logo-cell static-block"></div>
+                        <div class="piece">
+                            <div class="block"></div><div class="block"></div><div class="empty"></div>
+                            <div class="empty"></div><div class="block"></div><div class="block"></div>
+                        </div>
+                    </div>
+                    <h1>Block Game</h1>
+                </div>
+            </div>
+            <div class="header-right">
+                <button class="btn btn-primary header-btn" hx-get="/hall-of-fame" hx-target="body">Hall of Fame</button>
+                <button class="btn btn-primary header-btn" hx-get="/comments" hx-target="body">Comments</button>
+                <button class="btn btn-primary header-btn" hx-get="/modal" hx-target="#modals-here .modal-content" data-bs-toggle="modal" data-bs-target="#modals-here">Rules</button>
+                <div class="profile-links">
+                    <span>Logged as: </span>
+                    <span th:text="${@userController.logged} ? ${@userController.loggedUser.login} : 'Guest'"></span>
+                    <a href="/profile">Profile</a>
+                    <a href="/logout">Logout</a>
+                </div>
+                <div class="theme-toggle">
+                    <label class="switch">
+                        <input type="checkbox" th:checked="${currentTheme == 'light'}"
+                               hx-post="/toggle-theme"
+                               hx-swap="none"
+                               hx-target="body"
+                               hx-on::after-request="if (event.detail.xhr.responseText === 'light') {
+                                       document.body.classList.add('light');
+                                   } else {
+                                       document.body.classList.remove('light');
+                                   }">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div id="modals-here" class="modal fade" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content"></div>
+        </div>
+    </div>
+
+    <div class="game-area">
+        <div class="sidebar-left">
+            <h3>Select Difficulty</h3>
+            <form method="post" action="/blockgame/setDifficulty">
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <label><input type="radio" name="difficulty" value="EASY" th:checked="${difficulty == 'EASY'}" required> Easy (6x6)</label>
+                    <label><input type="radio" name="difficulty" value="MEDIUM" th:checked="${difficulty == 'MEDIUM'}"> Medium (9x9)</label>
+                    <label><input type="radio" name="difficulty" value="HARD" th:checked="${difficulty == 'HARD'}"> Hard (12x12)</label>
+                    <button type="submit" class="btn btn-primary">Apply Difficulty</button>
+                </div>
+            </form>
+            <form method="post" action="/blockgame/undo" th:if="${!gameOver and canUndo}">
+                <button type="submit" class="btn btn-primary">Undo</button>
+            </form>
+            <form method="post" action="/blockgame/newgame">
+                <button type="submit" class="btn btn-primary">New Game</button>
+            </form>
+            <div style="text-align: center; margin-top: 10px;">
+                <span th:text="'Undos remaining: ' + ${3 - undoCount}"></span>
+            </div>
+            <h3 th:if="${!gameOver}">Score: <span id="score" th:text="${score}"></span></h3>
+        </div>
+        <div class="center-content">
+            <div class="game-board-container">
+                <table class="game-board" th:classappend="${gameOver} ? 'game-over'">
+                    <tr th:each="row, rowIndex : ${tiles}">
+                        <td th:each="tile, colIndex : ${row}"
+                            th:style="${tile.state.name() == 'OCCUPIED' ? 'background-color: ' + tile.color : ''}"
+                            th:class="${tile.state.name() == 'OCCUPIED' ? 'occupied' : ''}"
+                            th:attr="data-row=${rowIndex.index}, data-col=${colIndex.index},
+                                     onmouseover=${!gameOver} ? 'showPreview(' + ${rowIndex.index} + ',' + ${colIndex.index} + ')' : '',
+                                     onmouseout=${!gameOver} ? 'hidePreview()' : ''">
+                            <form method="post" action="/blockgame/place" th:if="${!gameOver}">
+                                <input type="hidden" name="row" th:value="${rowIndex.index + 1}" />
+                                <input type="hidden" name="col" th:value="${colIndex.index + 1}" />
+                                <button type="submit" style="width: 100%; height: 100%; background: transparent; border: none;"></button>
+                            </form>
+                        </td>
+                    </tr>
+                </table>
+                <div th:if="${gameOver}" class="game-over-overlay" id="game-over">Game Over</div>
+                <div th:if="${gameOver}" class="final-score-overlay">Final Score: <span th:text="${score}"></span></div>
+            </div>
+            <h3>Current Block:</h3>
+            <table class="block-preview">
+                <tr th:each="row, rowIndex : ${currentBlock}">
+                    <td th:each="tile : ${row}"
+                        th:style="${tile == 1 ? 'background-color: ' + currentBlockColor : ''}"></td>
+                </tr>
+            </table>
+        </div>
+        <div class="sidebar-right">
+            <!-- For logged-in users, show normal headers and forms -->
+            <div th:if="${@userController.logged}">
+                <h3>Rate the Game</h3>
+                <form method="post" action="/blockgame/rate" id="rating-form">
+                    <div class="star-rating">
+                        <button type="button" class="star-btn" data-rating="1"
+                                th:disabled="${!gameOver}" onclick="setRating(1)">
+                            <svg viewBox="0 0 24 24" class="star">
+                                <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
+                            </svg>
+                        </button>
+                        <button type="button" class="star-btn" data-rating="2"
+                                th:disabled="${!gameOver}" onclick="setRating(2)">
+                            <svg viewBox="0 0 24 24" class="star">
+                                <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
+                            </svg>
+                        </button>
+                        <button type="button" class="star-btn" data-rating="3"
+                                th:disabled="${!gameOver}" onclick="setRating(3)">
+                            <svg viewBox="0 0 24 24" class="star">
+                                <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
+                            </svg>
+                        </button>
+                        <button type="button" class="star-btn" data-rating="4"
+                                th:disabled="${!gameOver}" onclick="setRating(4)">
+                            <svg viewBox="0 0 24 24" class="star">
+                                <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
+                            </svg>
+                        </button>
+                        <button type="button" class="star-btn" data-rating="5"
+                                th:disabled="${!gameOver}" onclick="setRating(5)">
+                            <svg viewBox="0 0 24 24" class="star">
+                                <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <input type="hidden" name="rating" id="rating-value" value="0">
+                    <button type="submit" class="btn btn-primary"
+                            th:disabled="${!gameOver}" id="submit-rating" style="display: none;">Submit Rating</button>
+                </form>
+
+                <h3>Leave a Comment</h3>
+                <form method="post" action="/blockgame/comment">
+                    <textarea name="comment" rows="3" cols="30" placeholder="Write your comment..." required
+                              th:disabled="${!gameOver}"></textarea>
+                    <button type="submit" class="btn btn-primary"
+                            th:disabled="${!gameOver}">Submit Comment</button>
+                </form>
+            </div>
+            <div class="guest-notice" th:if="${!@userController.logged}">
+                <p>Please log in to rate the game and leave comments</p>
+                <a href="/login" class="login-btn">Log In</a>
+            </div>
+            <h3>Average Rating: <span th:text="${rating}"></span></h3>
+        </div>
+    </div>
+</div>
+<script th:inline="javascript">
+    document.addEventListener('DOMContentLoaded', function () {
+        const toggle = document.querySelector('.switch input');
+        if (toggle) {
+            toggle.checked = document.body.classList.contains('light');
+        }
+        const storedRating = localStorage.getItem('lastRating');
+        if (storedRating) {
+            highlightStars(parseInt(storedRating));
+        }
+    });
+
+    function setRating(rating) {
+        document.getElementById('rating-value').value = rating;
+        highlightStars(rating);
+        localStorage.setItem('lastRating', rating);
+        document.getElementById('rating-form').submit();
+    }
+
+    function highlightStars(rating) {
+        const stars = document.querySelectorAll('.star-btn');
+        stars.forEach((star, index) => {
+            if (index < rating) {
+                star.classList.add('active');
+            } else {
+                star.classList.remove('active');
+            }
+        });
+    }
+
+    const currentBlock = /*[[${currentBlock}]]*/ [];
+    const currentBlockColor = /*[[${currentBlockColor}]]*/ '';
+    const gameOver = /*[[${gameOver}]]*/ false;
+    function toRgba(color, alpha) {
+        if (!color) return 'rgba(0, 255, 0, 0.3)';
+        if (color.startsWith('#')) {
+            const r = parseInt(color.slice(1, 3), 16);
+            const g = parseInt(color.slice(3, 5), 16);
+            const b = parseInt(color.slice(5, 7), 16);
+            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        } else if (color.startsWith('rgb')) {
+            const rgb = color.match(/\d+/g).slice(0, 3);
+            return `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${alpha})`;
+        }
+        return color;
+    }
+
+    function getBoard() {
+        const rows = document.querySelectorAll('.game-board tr');
+        const board = [];
+        rows.forEach(row => {
+            const rowData = [];
+            row.querySelectorAll('td').forEach(cell => {
+                rowData.push(cell);
+            });
+            board.push(rowData);
+        });
+        return board;
+    }
+
+    function canPlaceBlock(board, block, row, col) {
+        if (!block || !block.length || gameOver) return false;
+        const boardRows = board.length;
+        const boardCols = board[0].length;
+        const blockRows = block.length;
+        const blockCols = block[0].length;
+        if (row + blockRows > boardRows || col + blockCols > boardCols) {
+            return false;
+        }
+        for (let i = 0; i < blockRows; i++) {
+            for (let j = 0; j < blockCols; j++) {
+                if (block[i][j] === 1) {
+                    const boardCell = board[row + i][col + j];
+                    if (boardCell.classList.contains('occupied')) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
+    function showPreview(row, col) {
+        if (gameOver || !currentBlock || !currentBlock.length) return;
+        const board = getBoard();
+        const canPlace = canPlaceBlock(board, currentBlock, row, col);
+        const previewColor = toRgba(currentBlockColor, 0.3);
+        for (let i = 0; i < currentBlock.length; i++) {
+            for (let j = 0; j < currentBlock[i].length; j++) {
+                if (currentBlock[i][j] === 1) {
+                    const targetRow = row + i;
+                    const targetCol = col + j;
+                    if (targetRow < board.length && targetCol < board[0].length) {
+                        const targetCell = board[targetRow][targetCol];
+                        if (canPlace) {
+                            targetCell.classList.add('preview');
+                            targetCell.style.backgroundColor = previewColor;
+                        } else {
+                            targetCell.classList.add('invalid-preview');
+                        }
+                    }
+                }
+            }
+        }
+    }
+    function hidePreview() {
+        const board = getBoard();
+        board.forEach(row => {
+            row.forEach(cell => {
+                cell.classList.remove('preview', 'invalid-preview');
+                if (!cell.classList.contains('occupied')) {
+                    cell.style.backgroundColor = '';
+                }
+            });
+        });
+    }
+</script>
+</body>
+</html>

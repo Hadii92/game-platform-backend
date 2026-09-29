@@ -1,0 +1,97 @@
+.modal-content {
+    background-color: rgba(0, 0, 0, 0.6);
+    color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+    border: none;
+    transition: background-color 0.3s, color 0.3s;
+}
+body.light .modal-content {
+    background-color: rgba(255, 255, 255, 0.8);
+    color: #000;
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.2);
+}
+.modal-header {
+    background-color: rgba(15, 0, 30, 0.9);
+    color: #fff;
+    border-bottom: 1px solid rgba(51, 51, 51, 0.5);
+    padding: 15px 20px;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+}
+body.light .modal-header {
+    background-color: rgba(240, 240, 240, 0.9);
+    color: #000;
+    border-bottom: 1px solid rgba(200, 200, 200, 0.5);
+}
+.modal-title {
+    font-size: 20px;
+    font-weight: 500;
+    margin: 0;
+}
+.btn-close {
+    filter: invert(1);
+    opacity: 0.8;
+    transition: opacity 0.2s;
+}
+body.light .btn-close {
+    filter: invert(0);
+    opacity: 0.5;
+}
+.btn-close:hover {
+    opacity: 1;
+}
+.modal-body {
+    padding: 20px;
+    font-size: 16px;
+}
+.modal-body h6 {
+    font-size: 18px;
+    font-weight: 500;
+    margin-bottom: 10px;
+}
+.modal-body ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+.modal-body li {
+    margin-bottom: Juno 10px;
+    line-height: 1.5;
+}
+.modal-body li strong {
+    color: #4fc3f7;
+}
+body.light .modal-body li strong {
+    color: #007bff;
+}
+.modal-footer {
+    background-color: rgba(15, 0, 30, 0.9);
+    border-top: 1px solid rgba(51, 51, 51, 0.5);
+    padding: 10px 20px;
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+}
+body.light .modal-footer {
+    background-color: rgba(240, 240, 240, 0.9);
+    border-top: 1px solid rgba(200, 200, 200, 0.5);
+}
+.btn-secondary {
+    background-color: #333;
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 5px;
+    font-size: 14px;
+    transition: background-color 0.2s;
+}
+body.light .btn-secondary {
+    background-color: #ccc;
+    color: #000;
+}
+.btn-secondary:hover {
+    background-color: #555;
+}
+body.light .btn-secondary:hover {
+    background-color: #aaa;
+}
